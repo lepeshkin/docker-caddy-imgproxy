@@ -1,0 +1,93 @@
+version: '3.7'
+
+services:
+  caddy:
+    restart: unless-stopped
+    image: caddy:latest
+    container_name: caddy_app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+    depends_on:
+      - imgproxy
+    environment:
+      - DOMAIN=${DOMAIN}
+  imgproxy:
+    restart: unless-stopped
+    image: darthsim/imgproxy:latest
+    container_name: imgproxy_app
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - 8080
+    volumes:
+      - ./imgproxy/data:/home:cached
+    healthcheck:
+      test: [ "CMD", "imgproxy", "health" ]
+      timeout: 10s
+      interval: 10s
+      retries: 3
+    environment:
+      ### https://docs.imgproxy.net/configuration
+
+      ### log and debug
+      IMGPROXY_LOG_LEVEL: "info"
+      IMGPROXY_ENABLE_DEBUG_HEADERS: "false"
+      IMGPROXY_DEVELOPMENT_ERRORS_MODE: "false"
+      IMGPROXY_REPORT_DOWNLOADING_ERRORS: "false"
+
+      ### timeouts
+      IMGPROXY_READ_TIMEOUT: 10
+      IMGPROXY_WRITE_TIMEOUT: 10
+      IMGPROXY_DOWNLOAD_TIMEOUT: 10
+      IMGPROXY_KEEP_ALIVE_TIMEOUT: 300
+
+      ### image source
+      IMGPROXY_TTL: 31536000 # client-side cache time is 30 days
+      IMGPROXY_USE_ETAG: "false"
+      IMGPROXY_SO_REUSEPORT: "true"
+      IMGPROXY_IGNORE_SSL_VERIFICATION: "false"
+      #IMGPROXY_LOCAL_FILESYSTEM_ROOT: /home
+      IMGPROXY_SKIP_PROCESSING_FORMATS: "svg,webp,avif"
+      IMGPROXY_MAX_SRC_FILE_SIZE: 20971520 # 20MB
+      IMGPROXY_MAX_SRC_RESOLUTION: 20
+
+      ### presets
+      IMGPROXY_AUTO_ROTATE: "true"
+      IMGPROXY_PRESETS: default=resizing_type:fit/gravity:sm/strip_metadata:1
+
+      ## fallback
+      IMGPROXY_FALLBACK_IMAGE_DATA: "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
+      ### compression
+      #IMGPROXY_ENABLE_AVIF_DETECTION: "true"
+      #IMGPROXY_ENFORCE_AVIF: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_ENFORCE_WEBP: "true"
+      IMGPROXY_STRIP_METADATA: "true"
+      IMGPROXY_STRIP_COLOR_PROFILE: "true"
+      IMGPROXY_FORMAT_QUALITY: jpeg=80,webp=70,avif=70
+      IMGPROXY_JPEG_PROGRESSIVE: "false"
+      IMGPROXY_PNG_INTERLACED: "false"
+      IMGPROXY_PNG_QUANTIZATION_COLORS: 128
+      IMGPROXY_PNG_QUANTIZE: "false"
+      IMGPROXY_MAX_ANIMATION_FRAMES: 1
+      IMGPROXY_GZIP_COMPRESSION: 0
+      IMGPROXY_AVIF_SPEED: 8
+
+      ### For URL signature
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      IMGPROXY_SIGNATURE_SIZE: 32
+
+      ### External source (S3)
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_REGION: ${IMGPROXY_S3_REGION}
+      IMGPROXY_S3_ENDPOINT: ${IMGPROXY_S3_ENDPOINT}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}

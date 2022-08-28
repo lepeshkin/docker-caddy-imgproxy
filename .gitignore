@@ -1,0 +1,4 @@
+.idea/*
+/caddy/config/caddy/autosave.json
+/caddy/data/*
+.env

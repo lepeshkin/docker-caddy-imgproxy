@@ -1,0 +1,16 @@
+{$DOMAIN} {
+	@get {
+		method GET
+	}
+
+	respond / "IMG"
+	error /favicon.ico 404
+
+	header {
+    	    Strict-Transport-Security max-age=31536000;
+    	    X-Content-Type-Options: nosniff
+    	    X-Frame-Options DENY
+        }
+
+	reverse_proxy @get imgproxy:8080
+}
