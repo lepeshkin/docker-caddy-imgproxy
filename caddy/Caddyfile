@@ -11,6 +11,7 @@
     	    Strict-Transport-Security max-age=31536000;
     	    X-Content-Type-Options: nosniff
     	    X-Frame-Options DENY
+    	    Vary: Accept
         }
 
 	reverse_proxy @get imgproxy:8080
